@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Boeken — Kulba Rebel verhuur</title>
+<meta name="description" content="Kies je data in de kalender, vink je opties aan en stuur je boekingsaanvraag voor de Kulba Rebel.">
+<link rel="preload" href="fonts/inter.woff2" as="font" type="font/woff2" crossorigin>
+<style>
+@font-face{
+  font-family:'InterVar';
+  src:url('fonts/inter.woff2') format('woff2-variations'),
+      url('fonts/inter.woff2') format('woff2');
+  font-weight:100 900; font-style:normal; font-display:swap;
+}
+</style>
+<style>
+:root{
+  --ink:#111113; --ink-2:#1d1d1f; --paper:#fff; --paper-2:#f5f5f7;
+  --muted:#6e6e73; --line:rgba(0,0,0,.10); --accent:#E2600F; --accent-soft:#FFF1E6;
+  --ok:#1D7A5F; --nav-h:52px; --max:1120px;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%; scroll-behavior:smooth}
+body{margin:0; background:var(--paper); color:var(--ink);
+  font-family:'InterVar','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  font-size:17px; line-height:1.55; -webkit-font-smoothing:antialiased}
+img{max-width:100%; display:block}
+a{color:inherit}
+.wrap{max-width:var(--max); margin:0 auto; padding:0 22px}
+
+.nav{position:sticky; top:0; z-index:50; height:var(--nav-h);
+  background:rgba(255,255,255,.72); backdrop-filter:saturate(180%) blur(20px);
+  -webkit-backdrop-filter:saturate(180%) blur(20px); border-bottom:1px solid var(--line)}
+.nav-in{max-width:var(--max); margin:0 auto; padding:0 22px; height:100%; display:flex;
+  align-items:center; gap:26px}
+.brand{font-weight:800; letter-spacing:-.02em; font-size:17px; text-decoration:none; margin-right:auto}
+.brand span{color:var(--accent)}
+.nav a.link{font-size:13.5px; color:var(--ink-2); text-decoration:none; opacity:.85}
+.nav a.link:hover{opacity:1; color:var(--accent)}
+@media(max-width:760px){ .nav a.link{display:none} }
+
+/* header */
+.top{padding:70px 0 40px; border-bottom:1px solid var(--line)}
+.kicker{font-size:13px; font-weight:800; letter-spacing:.13em; text-transform:uppercase;
+  color:var(--accent); margin:0 0 14px}
+h1{margin:0 0 16px; font-size:clamp(40px,7vw,76px); font-weight:900; letter-spacing:-.045em; line-height:1}
+h1 em{font-style:normal; color:var(--accent)}
+.lead{margin:0; font-size:clamp(17px,2.1vw,21px); color:var(--muted); max-width:52ch}
+
+/* layout */
+.cols{display:grid; grid-template-columns:1fr 380px; gap:56px; padding:56px 0 90px; align-items:start}
+@media(max-width:980px){ .cols{grid-template-columns:1fr; gap:36px} }
+
+.step{margin-bottom:56px}
+.step-h{display:flex; align-items:center; gap:14px; margin-bottom:8px}
+.step-n{flex:none; width:30px; height:30px; border-radius:50%; background:var(--ink); color:#fff;
+  font-size:14px; font-weight:800; display:grid; place-items:center}
+.step h2{margin:0; font-size:clamp(24px,3.2vw,32px); font-weight:800; letter-spacing:-.035em}
+.step .hint{margin:0 0 24px 44px; color:var(--muted); font-size:15.5px}
+@media(max-width:640px){ .step .hint{margin-left:0} }
+
+/* calendar */
+.calbox{border:1px solid var(--line); border-radius:20px; padding:22px; background:#fff}
+.calnav{display:flex; align-items:center; justify-content:space-between; margin-bottom:4px}
+.calnav button{width:36px; height:36px; border-radius:50%; border:1px solid var(--line);
+  background:#fff; cursor:pointer; font-size:17px; color:var(--ink); line-height:1;
+  display:grid; place-items:center; transition:background .15s}
+.calnav button:hover:not(:disabled){background:var(--paper-2)}
+.calnav button:disabled{opacity:.3; cursor:not-allowed}
+.calnav .lbl{display:none}
+.months{display:grid; grid-template-columns:1fr 1fr; gap:34px}
+@media(max-width:820px){ .months{grid-template-columns:1fr} .months .m2{display:none} }
+.mtitle{text-align:center; font-weight:700; font-size:15.5px; letter-spacing:-.01em; margin-bottom:12px;
+  text-transform:capitalize}
+.dow{display:grid; grid-template-columns:repeat(7,1fr); gap:2px; margin-bottom:6px}
+.dow span{text-align:center; font-size:11px; font-weight:700; letter-spacing:.05em;
+  text-transform:uppercase; color:var(--muted)}
+.days{display:grid; grid-template-columns:repeat(7,1fr); gap:2px}
+.day{position:relative; aspect-ratio:1/1; border:0; background:transparent; font-family:inherit;
+  font-size:14.5px; font-weight:550; color:var(--ink); cursor:pointer; border-radius:10px;
+  display:grid; place-items:center; transition:background .12s, color .12s}
+.day:hover:not(:disabled){background:var(--paper-2)}
+.day.empty{visibility:hidden; cursor:default}
+.day:disabled{color:#c7c7cc; cursor:not-allowed; text-decoration:line-through}
+.day.bezet{color:#c7c7cc; text-decoration:line-through; background:repeating-linear-gradient(45deg,#fafafa,#fafafa 4px,#f0f0f2 4px,#f0f0f2 8px)}
+.day.aanvraag{color:#B0703A; text-decoration:none; font-weight:600;
+  background:repeating-linear-gradient(45deg,#FFF7F0,#FFF7F0 4px,#FADCC0 4px,#FADCC0 8px)}
+.day.inrange{background:var(--accent-soft); border-radius:0}
+.day.sel{background:var(--accent); color:#fff; font-weight:750; border-radius:10px}
+.day.today::after{content:""; position:absolute; bottom:5px; width:4px; height:4px; border-radius:50%;
+  background:var(--accent)}
+.day.sel.today::after{background:#fff}
+.legend{display:flex; flex-wrap:wrap; gap:18px; margin-top:20px; padding-top:18px;
+  border-top:1px solid var(--line); font-size:13px; color:var(--muted)}
+.legend i{display:inline-block; width:13px; height:13px; border-radius:4px; margin-right:7px;
+  vertical-align:-2px}
+.calmsg{margin-top:16px; font-size:14.5px; font-weight:600; color:var(--accent); min-height:1.4em}
+.calmsg.ok{color:var(--ok)}
+.voorbehoud{margin:10px 0 0; font-size:13.5px; color:var(--muted); line-height:1.5}
+.verversing{margin:8px 0 0; font-size:13px; color:var(--muted); line-height:1.5; min-height:1em}
+.verversing.waarschuwing{color:#B0703A; font-weight:600}
+
+/* opties */
+.opts{display:grid; grid-template-columns:repeat(2,1fr); gap:12px}
+@media(max-width:640px){ .opts{grid-template-columns:1fr} }
+.opt{border:1.5px solid var(--line); border-radius:16px; padding:18px 18px 16px; cursor:pointer;
+  display:block; transition:border-color .15s, background .15s; background:#fff; position:relative}
+.opt:hover{border-color:#c8c8cc}
+.opt.on{border-color:var(--accent); background:var(--accent-soft)}
+.opt input{position:absolute; opacity:0; pointer-events:none}
+.opt-top{display:flex; align-items:flex-start; gap:12px}
+.box{flex:none; width:22px; height:22px; border-radius:7px; border:1.8px solid #c8c8cc; background:#fff;
+  margin-top:1px; transition:all .15s}
+.opt.on .box{background:var(--accent); border-color:var(--accent);
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'/%3E%3C/svg%3E");
+  background-size:14px; background-position:center; background-repeat:no-repeat}
+.opt-naam{font-weight:700; letter-spacing:-.02em; font-size:16.5px; line-height:1.25}
+.opt-oms{font-size:14px; color:var(--muted); margin-top:4px; line-height:1.45}
+.opt-prijs{margin-left:auto; flex:none; font-weight:800; font-size:15.5px; color:var(--accent);
+  white-space:nowrap; text-align:right}
+.opt-prijs small{display:block; font-weight:600; font-size:11.5px; color:var(--muted);
+  letter-spacing:.03em; text-transform:uppercase}
+.stepper{display:flex; align-items:center; gap:10px; margin:14px 0 0 34px}
+.stepper button{width:28px; height:28px; border-radius:8px; border:1px solid var(--line); background:#fff;
+  font-size:15px; cursor:pointer; line-height:1; display:grid; place-items:center; font-family:inherit}
+.stepper button:hover{background:var(--paper-2)}
+.stepper .n{font-weight:700; min-width:20px; text-align:center; font-variant-numeric:tabular-nums}
+.stepper .lb{font-size:13px; color:var(--muted)}
+.opts-empty{border:1.5px dashed var(--line); border-radius:16px; padding:26px; text-align:center;
+  color:var(--muted); font-size:15px}
+
+/* form */
+.fields{display:grid; grid-template-columns:1fr 1fr; gap:14px}
+@media(max-width:640px){ .fields{grid-template-columns:1fr} }
+.field{display:grid; gap:7px}
+.field.full{grid-column:1/-1}
+label{font-size:13.5px; font-weight:650; letter-spacing:-.01em}
+input[type=text],input[type=email],input[type=tel],textarea,select{
+  font-family:inherit; font-size:16px; padding:13px 15px; border-radius:12px;
+  border:1.5px solid var(--line); background:#fff; color:var(--ink); width:100%; transition:border-color .15s}
+input:focus,textarea:focus,select:focus{outline:none; border-color:var(--accent)}
+textarea{resize:vertical; min-height:110px}
+.check{display:flex; gap:11px; align-items:flex-start; font-size:14.5px; color:var(--muted);
+  grid-column:1/-1; cursor:pointer}
+.check input{margin-top:3px; accent-color:var(--accent); width:17px; height:17px}
+
+/* summary */
+.sum{position:sticky; top:calc(var(--nav-h) + 22px); border:1px solid var(--line); border-radius:22px;
+  overflow:hidden auto; background:#fff; box-shadow:0 18px 44px rgba(0,0,0,.07);
+  max-height:calc(100svh - var(--nav-h) - 44px)}
+@media(max-width:980px){ .sum{position:static; max-height:none; overflow:hidden} }
+.sum-img{height:150px; width:100%; object-fit:cover}
+.sum-in{padding:24px}
+.sum h3{margin:0 0 4px; font-size:20px; font-weight:800; letter-spacing:-.03em}
+.sum .sub{margin:0 0 20px; font-size:14px; color:var(--muted)}
+.line{display:flex; justify-content:space-between; gap:14px; font-size:15px; padding:9px 0;
+  border-bottom:1px solid var(--line)}
+.line span:first-child{color:var(--muted)}
+.line b{font-weight:650; font-variant-numeric:tabular-nums; white-space:nowrap}
+.line.dim{color:var(--muted)}
+.total{display:flex; justify-content:space-between; align-items:baseline; gap:14px; margin-top:20px;
+  padding-top:18px; border-top:2px solid var(--ink)}
+.total span{font-size:15px; font-weight:700}
+.total b{font-size:34px; font-weight:900; letter-spacing:-.04em; color:var(--accent);
+  font-variant-numeric:tabular-nums}
+.borg{font-size:13px; color:var(--muted); margin-top:8px}
+.btn{display:inline-flex; align-items:center; justify-content:center; gap:8px; border:0; cursor:pointer;
+  text-decoration:none; font-family:inherit; font-size:16px; font-weight:650; letter-spacing:-.01em;
+  padding:15px 28px; border-radius:999px; transition:transform .15s, background .15s; width:100%}
+.btn:active{transform:scale(.98)}
+.btn-primary{background:var(--accent); color:#fff}
+.btn-primary:hover{background:#c9530b}
+.btn-primary:disabled{background:#d2d2d7; color:#fff; cursor:not-allowed; transform:none}
+.sum .btn{margin-top:20px}
+.sum-note{font-size:12.5px; color:var(--muted); text-align:center; margin-top:12px; line-height:1.5}
+.empty-state{font-size:14.5px; color:var(--muted); padding:14px 0}
+
+footer{background:var(--paper-2); padding:48px 0; font-size:14px; color:var(--muted)}
+footer a{color:var(--ink-2); text-decoration:none}
+footer a:hover{color:var(--accent)}
+.sr{position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0)}
+
+/* ---------- toegankelijkheid & motion ---------- */
+h1,h2,h3,.opt-naam,.feature h3{text-wrap:balance}
+:where(a,button,summary,input,textarea,select,.opt):focus-visible{
+  outline:3px solid var(--accent); outline-offset:3px; border-radius:8px}
+.day:focus-visible{outline-offset:-2px}
+@media (prefers-reduced-motion: reduce){
+  html{scroll-behavior:auto}
+  *,*::before,*::after{animation-duration:.01ms !important; animation-iteration-count:1 !important;
+    transition-duration:.01ms !important; scroll-behavior:auto !important}
+  .btn:active{transform:none}
+  .gal a:hover img{transform:none}
+}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-in">
+    <a class="brand" href="index.html">Rebel<span>·</span>verhuur</a>
+    <a class="link" href="index.html#specs">Specificaties</a>
+    <a class="link" href="index.html#prijzen">Prijzen</a>
+    <a class="link" href="index.html#faq">FAQ</a>
+  </div>
+</nav>
+
+<div class="top">
+  <div class="wrap">
+    <p class="kicker">Boeking</p>
+    <h1>Kies je data.<br>Wij doen de <em>rest</em>.</h1>
+    <p class="lead">Selecteer een aankomst- en vertrekdatum in de kalender, vink de extra's aan en stuur je aanvraag door. Je krijgt binnen 24 uur bevestiging — pas dan is de boeking definitief.</p>
+  </div>
+</div>
+
+<div class="wrap">
+  <form class="cols" id="form" novalidate>
+    <div>
+
+      <!-- STAP 1 -->
+      <div class="step">
+        <div class="step-h"><div class="step-n">1</div><h2>Periode</h2></div>
+        <p class="hint">Klik op je aankomstdag en daarna op je vertrekdag. Minimaal <b id="minN">2</b> nachten.</p>
+        <div class="calbox">
+          <div class="calnav">
+            <button type="button" id="prev" aria-label="Vorige maand">‹</button>
+            <div class="lbl" id="calLbl">—</div>
+            <button type="button" id="next" aria-label="Volgende maand">›</button>
+          </div>
+          <div class="months">
+            <div class="m1">
+              <div class="mtitle" id="t1"></div>
+              <div class="dow"><span>ma</span><span>di</span><span>wo</span><span>do</span><span>vr</span><span>za</span><span>zo</span></div>
+              <div class="days" id="d1"></div>
+            </div>
+            <div class="m2">
+              <div class="mtitle" id="t2"></div>
+              <div class="dow"><span>ma</span><span>di</span><span>wo</span><span>do</span><span>vr</span><span>za</span><span>zo</span></div>
+              <div class="days" id="d2"></div>
+            </div>
+          </div>
+          <div class="legend">
+            <div><i style="background:var(--accent)"></i>Jouw selectie</div>
+            <div><i style="background:var(--accent-soft)"></i>Tussenliggend</div>
+            <div><i style="background:repeating-linear-gradient(45deg,#fafafa,#fafafa 3px,#e8e8ea 3px,#e8e8ea 6px)"></i>Bezet</div>
+            <div><i style="background:repeating-linear-gradient(45deg,#FFF7F0,#FFF7F0 3px,#FADCC0 3px,#FADCC0 6px)"></i>In aanvraag</div>
+            <div style="margin-left:auto"><button type="button" id="reset" style="border:0;background:none;color:var(--accent);font:inherit;font-size:13px;font-weight:650;cursor:pointer;padding:0">Selectie wissen</button></div>
+          </div>
+          <div class="calmsg" id="calmsg"></div>
+          <p class="voorbehoud">Een periode is pas definitief wanneer je een bevestiging van mij hebt. Dagen die oranje gearceerd staan, zijn al door iemand anders aangevraagd.</p>
+          <p class="verversing" id="verversing"></p>
+        </div>
+      </div>
+
+      <!-- STAP 2 -->
+      <div class="step">
+        <div class="step-h"><div class="step-n">2</div><h2>Opties</h2></div>
+        <p class="hint">Alle basisuitrusting zit al in de huurprijs. Dit zijn de extra's.</p>
+        <div class="opts" id="opts"></div>
+      </div>
+
+      <!-- STAP 3 -->
+      <div class="step">
+        <div class="step-h"><div class="step-n">3</div><h2>Jouw gegevens</h2></div>
+        <p class="hint">Enkel om je aanvraag te kunnen bevestigen.</p>
+        <div class="fields">
+          <div class="field"><label for="naam">Naam *</label><input type="text" id="naam" name="naam" autocomplete="name" required></div>
+          <div class="field"><label for="email">E-mail *</label><input type="email" id="email" name="email" autocomplete="email" required></div>
+          <div class="field"><label for="tel">Telefoon</label><input type="tel" id="tel" name="tel" autocomplete="tel"></div>
+          <div class="field"><label for="auto">Trekkend voertuig</label><input type="text" id="auto" name="auto" placeholder="bv. VW Passat 2019"></div>
+          <div class="field full"><label for="ber">Bestemming of vraag</label><textarea id="ber" name="ber" placeholder="Waar trek je naartoe? Heb je nog vragen?"></textarea></div>
+          <label class="check"><input type="checkbox" id="akkoord"><span>Ik heb de huurvoorwaarden gelezen en ga akkoord met de waarborg van <b id="borgTxt">€250</b>.</span></label>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- SAMENVATTING -->
+    <aside>
+      <div class="sum">
+        <img class="sum-img" src="img/hero-sm.webp" width="800" height="534" loading="lazy" decoding="async" alt="Kulba Rebel">
+        <div class="sum-in">
+          <h3>Kulba Rebel</h3>
+          <p class="sub">Teardrop caravan · 2 personen</p>
+          <div id="sumLines"><div class="empty-state">Kies eerst je data in de kalender.</div></div>
+          <div class="total"><span>Totaal</span><b id="totaal">€0</b></div>
+          <div class="borg">+ <span id="borgTxt2">€250</span> waarborg, terugbetaald na teruggave</div>
+          <button class="btn btn-primary" type="submit" id="verzend" disabled>Aanvraag versturen</button>
+          <p class="sum-note">Je mailprogramma opent met alle gegevens ingevuld. Nog geen betaling — dit is een aanvraag.</p>
+        </div>
+      </div>
+    </aside>
+  </form>
+</div>
+
+<footer>
+  <div class="wrap" style="display:flex;flex-wrap:wrap;gap:24px;justify-content:space-between">
+    <div><b style="color:var(--ink)">Rebel·verhuur</b> · <a href="mailto:tijs@ttof.be">tijs@ttof.be</a></div>
+    <div><a href="index.html">Terug naar de site</a></div>
+  </div>
+</footer>
+
+<script src="beschikbaarheid.js"></script>
+<script>
+/* ══════════════════════════════════════════════════════════════════════════
+   ①  INSTELLINGEN — pas hier alles aan
+   ══════════════════════════════════════════════════════════════════════════ */
+
+const CONFIG = {
+  email:        'tijs@ttof.be',   // waar de aanvraag naartoe gaat
+  prijsPerNacht: 75,              // € per nacht
+  weekendPrijs:  165,             // vaste prijs vr→zo (2 nachten, start op vrijdag)
+  weekPrijs:     450,             // vaste prijs per volle week (7 nachten)
+  waarborg:      250,             // € waarborg
+  minNachten:    2,               // minimum aantal nachten
+  maxMaandenVooruit: 14,          // hoe ver de kalender vooruit mag
+
+  /* De actuele beschikbaarheid staat in een publieke GitHub Gist, zodat het
+     bijwerken ervan geen nieuwe deploy van de site kost. Vul hier het ID in
+     dat de beheerpagina je geeft. Laat leeg om enkel het meegeleverde
+     beschikbaarheid.js te gebruiken.                                        */
+  gistId: ''
+};
+
+/* Bezette en aangevraagde periodes staan in `beschikbaarheid.js`.
+   Beheer ze met `beheer.html`: daar klik je datums aan en download je het
+   bijgewerkte bestand. Handmatig kan ook — het bestand legt zichzelf uit.  */
+const DATA = window.BESCHIKBAARHEID || { bezet: [], aangevraagd: [] };
+
+/* ══════════════════════════════════════════════════════════════════════════
+   ②  OPTIES — voeg hier gerust regels toe of verwijder ze
+       naam        : titel op de kaart
+       oms         : één regel uitleg (mag leeg: '')
+       prijs       : bedrag in euro (0 = gratis)
+       per         : 'verhuur' = eenmalig  |  'nacht' = × aantal nachten
+       aantal      : true  → toon een +/- teller (bv. extra stoelen)
+       max         : hoogste aantal bij aantal:true
+       standaard   : true  → staat meteen aangevinkt
+   ══════════════════════════════════════════════════════════════════════════ */
+const OPTIES = [
+  { id:'beddengoed', naam:'Beddengoedset',        oms:'Hoeslaken, dekbed en kussens voor twee.',        prijs:25,  per:'verhuur' },
+  { id:'daktent',    naam:'Dakrek + daktent',     oms:'Slaapplaats voor 3 extra personen bovenop.',     prijs:20,  per:'nacht'   },
+  { id:'luifel',     naam:'Zijluifel',            oms:'Extra overdekte ruimte naast het keukenluik.',   prijs:35,  per:'verhuur' },
+  { id:'fietsdrager',naam:'Fietsendrager',        oms:'Voor twee fietsen op de dissel.',                prijs:30,  per:'verhuur' },
+  { id:'stoel',      naam:'Extra kampeerstoel',   oms:'Twee stoelen zitten standaard in de huur.',      prijs:5,   per:'verhuur', aantal:true, max:4 },
+  { id:'keukenset',  naam:'Uitgebreide keukenset',oms:'Potten, pannen, borden en bestek voor vier.',    prijs:20,  per:'verhuur' },
+  { id:'omnium',     naam:'Omniumdekking',        oms:'Vrijstelling van €250 naar €50.',                prijs:9,   per:'nacht'   },
+  { id:'levering',   naam:'Levering aan huis',    oms:'Binnen 40 km. Heen en terug.',                   prijs:60,  per:'verhuur' }
+];
+
+/* ══════════════════════════════════════════════════════════════════════════
+   ③  Vanaf hier hoef je niets meer te wijzigen
+   ══════════════════════════════════════════════════════════════════════════ */
+
+const DAG = 86400000;
+const iso = d => d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+const parse = s => { const [y,m,d] = s.split('-').map(Number); return new Date(y, m-1, d); };
+const eur = n => '€' + n.toLocaleString('nl-BE');
+const NL_M = ['januari','februari','maart','april','mei','juni','juli','augustus','september','oktober','november','december'];
+const fmt = d => d.getDate() + ' ' + NL_M[d.getMonth()] + ' ' + d.getFullYear();
+
+// periodes uitklappen naar losse dagen
+function naarSet(periodes){
+  const set = new Set();
+  (periodes || []).forEach(p => {
+    const van = typeof p === 'string' ? p : p.van;
+    const tot = typeof p === 'string' ? p : (p.tot || p.van);
+    if (!van) return;
+    let c = parse(van); const e = parse(tot);
+    while (c <= e){ set.add(iso(c)); c = new Date(c.getTime() + DAG); }
+  });
+  return set;
+}
+let bezetSet    = naarSet(DATA.bezet);
+let aanvraagSet = naarSet(DATA.aangevraagd);
+const geblokkeerd = k => bezetSet.has(k) || aanvraagSet.has(k);
+
+const vandaag = new Date(); vandaag.setHours(0,0,0,0);
+let toon = new Date(vandaag.getFullYear(), vandaag.getMonth(), 1);
+const laatsteMaand = new Date(vandaag.getFullYear(), vandaag.getMonth() + CONFIG.maxMaandenVooruit, 1);
+let start = null, eind = null;
+const aantallen = {};
+
+document.getElementById('minN').textContent = CONFIG.minNachten;
+document.getElementById('borgTxt').textContent = eur(CONFIG.waarborg);
+document.getElementById('borgTxt2').textContent = eur(CONFIG.waarborg);
+
+/* ---------- kalender ---------- */
+function bouwMaand(basis, offset, titelEl, dagenEl){
+  const m = new Date(basis.getFullYear(), basis.getMonth() + offset, 1);
+  titelEl.textContent = NL_M[m.getMonth()] + ' ' + m.getFullYear();
+  const eersteDow = (m.getDay() + 6) % 7;            // maandag = 0
+  const nDagen = new Date(m.getFullYear(), m.getMonth()+1, 0).getDate();
+  let html = '';
+  for (let i = 0; i < eersteDow; i++) html += '<div class="day empty"></div>';
+  for (let d = 1; d <= nDagen; d++){
+    const dt = new Date(m.getFullYear(), m.getMonth(), d);
+    const k = iso(dt);
+    const verleden = dt < vandaag;
+    const bezet    = bezetSet.has(k);
+    const aanvraag = !bezet && aanvraagSet.has(k);
+    const cls = ['day'];
+    if (bezet) cls.push('bezet');
+    if (aanvraag) cls.push('aanvraag');
+    if (k === iso(vandaag)) cls.push('today');
+    if (start && eind){
+      if (dt > start && dt < eind) cls.push('inrange');
+      if (k === iso(start)) cls.push('sel','start');
+      if (k === iso(eind))  cls.push('sel','end');
+    } else if (start && k === iso(start)) cls.push('sel','solo');
+    const titel = bezet ? ' title="Bezet"' : (aanvraag ? ' title="Al aangevraagd door iemand anders"' : '');
+    html += '<button type="button" class="' + cls.join(' ') + '" data-d="' + k + '"' + titel +
+            ((verleden || bezet || aanvraag) ? ' disabled' : '') + '>' + d + '</button>';
+  }
+  dagenEl.innerHTML = html;
+}
+
+function tekenKalender(){
+  bouwMaand(toon, 0, document.getElementById('t1'), document.getElementById('d1'));
+  bouwMaand(toon, 1, document.getElementById('t2'), document.getElementById('d2'));
+  document.getElementById('calLbl').textContent =
+    NL_M[toon.getMonth()].charAt(0).toUpperCase() + NL_M[toon.getMonth()].slice(1) + ' ' + toon.getFullYear();
+  document.getElementById('prev').disabled =
+    toon <= new Date(vandaag.getFullYear(), vandaag.getMonth(), 1);
+  document.getElementById('next').disabled = toon >= laatsteMaand;
+  document.querySelectorAll('.day[data-d]').forEach(b => b.addEventListener('click', () => kiesDag(b.dataset.d)));
+}
+
+function bevatGeblokkeerd(a, b){
+  let c = new Date(a.getTime());
+  while (c < b){ if (geblokkeerd(iso(c))) return true; c = new Date(c.getTime() + DAG); }
+  return false;
+}
+
+function kiesDag(k){
+  const dt = parse(k);
+  const msg = document.getElementById('calmsg');
+  msg.className = 'calmsg';
+
+  if (!start || (start && eind)) { start = dt; eind = null; msg.textContent = 'Kies nu je vertrekdatum.'; }
+  else if (dt <= start)          { start = dt; eind = null; msg.textContent = 'Kies nu je vertrekdatum.'; }
+  else {
+    const nachten = Math.round((dt - start) / DAG);
+    if (nachten < CONFIG.minNachten){
+      msg.textContent = 'Minimaal ' + CONFIG.minNachten + ' nachten — kies een latere vertrekdatum.';
+      tekenKalender(); return;
+    }
+    if (bevatGeblokkeerd(start, dt)){
+      msg.textContent = 'Er valt een bezette of al aangevraagde dag in deze periode. Kies een andere reeks.';
+      start = dt; eind = null; tekenKalender(); herbereken(); return;
+    }
+    eind = dt;
+    msg.className = 'calmsg ok';
+    msg.textContent = nachten + (nachten === 1 ? ' nacht' : ' nachten') + ' · ' + fmt(start) + ' → ' + fmt(eind);
+  }
+  tekenKalender();
+  herbereken();
+}
+
+document.getElementById('prev').onclick = () => { toon = new Date(toon.getFullYear(), toon.getMonth()-1, 1); tekenKalender(); };
+document.getElementById('next').onclick = () => { toon = new Date(toon.getFullYear(), toon.getMonth()+1, 1); tekenKalender(); };
+document.getElementById('reset').onclick = () => {
+  start = eind = null;
+  document.getElementById('calmsg').textContent = '';
+  document.getElementById('calmsg').className = 'calmsg';
+  tekenKalender(); herbereken();
+};
+
+/* ---------- opties ---------- */
+function tekenOpties(){
+  const el = document.getElementById('opts');
+  if (!OPTIES.length){
+    el.className = '';
+    el.innerHTML = '<div class="opts-empty">Nog geen opties toegevoegd. Voeg ze toe in <b>boeking.html</b> onder <code>OPTIES</code>.</div>';
+    return;
+  }
+  el.innerHTML = OPTIES.map(o => {
+    if (o.aantal) aantallen[o.id] = aantallen[o.id] || 1;
+    const per = o.per === 'nacht' ? 'per nacht' : 'eenmalig';
+    return '<label class="opt' + (o.standaard ? ' on' : '') + '" data-id="' + o.id + '">' +
+      '<input type="checkbox" data-opt="' + o.id + '"' + (o.standaard ? ' checked' : '') + '>' +
+      '<div class="opt-top"><div class="box"></div><div>' +
+        '<div class="opt-naam">' + o.naam + '</div>' +
+        (o.oms ? '<div class="opt-oms">' + o.oms + '</div>' : '') +
+      '</div>' +
+      '<div class="opt-prijs">' + (o.prijs ? eur(o.prijs) : 'gratis') + '<small>' + (o.prijs ? per : '&nbsp;') + '</small></div>' +
+      '</div>' +
+      (o.aantal ? '<div class="stepper" data-step="' + o.id + '">' +
+        '<button type="button" data-delta="-1">−</button>' +
+        '<span class="n" id="n-' + o.id + '">' + aantallen[o.id] + '</span>' +
+        '<button type="button" data-delta="1">+</button>' +
+        '<span class="lb">stuks</span></div>' : '') +
+    '</label>';
+  }).join('');
+
+  el.querySelectorAll('input[data-opt]').forEach(inp => {
+    inp.addEventListener('change', () => {
+      inp.closest('.opt').classList.toggle('on', inp.checked);
+      herbereken();
+    });
+  });
+  el.querySelectorAll('.stepper button').forEach(b => {
+    b.addEventListener('click', e => {
+      e.preventDefault(); e.stopPropagation();
+      const id = b.closest('.stepper').dataset.step;
+      const o = OPTIES.find(x => x.id === id);
+      const max = o.max || 9;
+      aantallen[id] = Math.min(max, Math.max(1, aantallen[id] + Number(b.dataset.delta)));
+      document.getElementById('n-' + id).textContent = aantallen[id];
+      const chk = el.querySelector('input[data-opt="' + id + '"]');
+      if (!chk.checked){ chk.checked = true; chk.closest('.opt').classList.add('on'); }
+      herbereken();
+    });
+  });
+}
+
+/* ---------- prijs ---------- */
+function basisPrijs(nachten, startDatum){
+  if (nachten === 2 && startDatum.getDay() === 5)
+    return { bedrag: CONFIG.weekendPrijs, uitleg: 'Weekendtarief (vr→zo)' };
+  const weken = Math.floor(nachten / 7);
+  const rest  = nachten % 7;
+  const bedrag = weken * CONFIG.weekPrijs + rest * CONFIG.prijsPerNacht;
+  let uitleg = nachten + ' × ' + eur(CONFIG.prijsPerNacht);
+  if (weken) uitleg = weken + '× weektarief' + (rest ? ' + ' + rest + ' × ' + eur(CONFIG.prijsPerNacht) : '');
+  return { bedrag, uitleg };
+}
+
+function gekozenOpties(nachten){
+  return OPTIES.filter(o => {
+    const i = document.querySelector('input[data-opt="' + o.id + '"]');
+    return i && i.checked;
+  }).map(o => {
+    const n = o.aantal ? (aantallen[o.id] || 1) : 1;
+    const keer = o.per === 'nacht' ? nachten : 1;
+    return { ...o, n, bedrag: o.prijs * n * keer,
+             label: o.naam + (o.aantal ? ' ×' + n : '') + (o.per === 'nacht' ? ' (' + nachten + ' nachten)' : '') };
+  });
+}
+
+let laatsteBerekening = null;
+
+function herbereken(){
+  const lines = document.getElementById('sumLines');
+  const knop  = document.getElementById('verzend');
+
+  if (!start || !eind){
+    lines.innerHTML = '<div class="empty-state">Kies eerst je data in de kalender.</div>';
+    document.getElementById('totaal').textContent = eur(0);
+    knop.disabled = true; laatsteBerekening = null; return;
+  }
+
+  const nachten = Math.round((eind - start) / DAG);
+  const basis = basisPrijs(nachten, start);
+  const opts  = gekozenOpties(nachten);
+  const totaal = basis.bedrag + opts.reduce((s,o) => s + o.bedrag, 0);
+
+  let html = '<div class="line"><span>Aankomst</span><b>' + fmt(start) + '</b></div>' +
+             '<div class="line"><span>Vertrek</span><b>' + fmt(eind) + '</b></div>' +
+             '<div class="line"><span>Huur · ' + basis.uitleg + '</span><b>' + eur(basis.bedrag) + '</b></div>';
+  opts.forEach(o => { html += '<div class="line"><span>' + o.label + '</span><b>' + (o.bedrag ? eur(o.bedrag) : 'gratis') + '</b></div>'; });
+  lines.innerHTML = html;
+  document.getElementById('totaal').textContent = eur(totaal);
+  knop.disabled = false;
+
+  laatsteBerekening = { nachten, basis, opts, totaal };
+}
+
+/* ---------- verzenden ---------- */
+document.getElementById('form').addEventListener('submit', e => {
+  e.preventDefault();
+  if (!laatsteBerekening) return;
+  const g = id => document.getElementById(id).value.trim();
+  const naam = g('naam'), mail = g('email');
+
+  if (!naam || !mail){ alert('Vul je naam en e-mailadres in.'); (naam ? document.getElementById('email') : document.getElementById('naam')).focus(); return; }
+  if (!document.getElementById('akkoord').checked){ alert('Vink aan dat je akkoord gaat met de waarborg.'); return; }
+
+  const b = laatsteBerekening;
+  const r = [];
+  r.push('BOEKINGSAANVRAAG KULBA REBEL');
+  r.push('================================');
+  r.push('');
+  r.push('Aankomst : ' + fmt(start));
+  r.push('Vertrek  : ' + fmt(eind));
+  r.push('Nachten  : ' + b.nachten);
+  r.push('');
+  r.push('Huur (' + b.basis.uitleg + '): ' + eur(b.basis.bedrag));
+  if (b.opts.length){
+    r.push('');
+    r.push('Opties:');
+    b.opts.forEach(o => r.push('  - ' + o.label + ': ' + (o.bedrag ? eur(o.bedrag) : 'gratis')));
+  } else r.push('Opties: geen');
+  r.push('');
+  r.push('TOTAAL   : ' + eur(b.totaal));
+  r.push('Waarborg : ' + eur(CONFIG.waarborg));
+  r.push('');
+  r.push('--------------------------------');
+  r.push('Naam      : ' + naam);
+  r.push('E-mail    : ' + mail);
+  r.push('Telefoon  : ' + (g('tel') || '-'));
+  r.push('Voertuig  : ' + (g('auto') || '-'));
+  r.push('');
+  r.push('Bericht:');
+  r.push(g('ber') || '-');
+
+  const onderwerp = 'Boekingsaanvraag Kulba Rebel — ' + fmt(start) + ' t/m ' + fmt(eind);
+  window.location.href = 'mailto:' + CONFIG.email +
+    '?subject=' + encodeURIComponent(onderwerp) +
+    '&body=' + encodeURIComponent(r.join('\n'));
+
+  /* Wil je later een echt formulier-endpoint (bv. Formspree)? Vervang de regel
+     hierboven door een fetch() naar jouw URL — de gegevens staan in `r` en `b`. */
+});
+
+tekenKalender();
+tekenOpties();
+herbereken();
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Actuele beschikbaarheid ophalen
+
+   Het meegeleverde beschikbaarheid.js is een momentopname van de laatste keer
+   dat de site zelf gepubliceerd werd. De echte, actuele gegevens staan in een
+   publieke Gist. Die halen we via api.github.com op — de rechtstreekse
+   raw-adressen van GitHub sturen geen CORS-headers en zijn dus onbruikbaar
+   vanuit een browser.
+   ══════════════════════════════════════════════════════════════════════════ */
+async function haalActueel(){
+  const el = document.getElementById('verversing');
+  if (!CONFIG.gistId) return;
+
+  try {
+    const r = await fetch('https://api.github.com/gists/' + CONFIG.gistId, {
+      headers: { 'Accept': 'application/vnd.github+json' }, cache: 'no-store' });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+
+    const gist = await r.json();
+    const bestand = gist.files && (gist.files['beschikbaarheid.json'] ||
+                    Object.values(gist.files).find(f => f && f.name && f.name.endsWith('.json')));
+    if (!bestand || !bestand.content) throw new Error('geen beschikbaarheid.json in de gist');
+
+    const data = JSON.parse(bestand.content);
+    bezetSet    = naarSet(data.bezet);
+    aanvraagSet = naarSet(data.aangevraagd);
+
+    // Werd de al gekozen periode intussen bezet? Dan de selectie loslaten.
+    if (start && eind && bevatGeblokkeerd(start, eind)){
+      start = eind = null;
+      const m = document.getElementById('calmsg');
+      m.className = 'calmsg';
+      m.textContent = 'Deze periode is intussen bezet. Kies een andere.';
+      herbereken();
+    }
+    tekenKalender();
+
+    el.className = 'verversing';
+    el.textContent = data.bijgewerkt
+      ? 'Beschikbaarheid bijgewerkt op ' + fmt(parse(data.bijgewerkt)) + '.'
+      : 'Beschikbaarheid is actueel.';
+  } catch (e) {
+    el.className = 'verversing waarschuwing';
+    el.textContent = 'De actuele beschikbaarheid kon niet geladen worden. ' +
+      'Je ziet een oudere stand — laat me je datums even bevestigen voor je rekent op een vrije periode.';
+  }
+}
+haalActueel();
+</script>
+</body>
+</html>
