@@ -9,12 +9,9 @@ window.BESCHIKBAARHEID = {
   bijgewerkt: '2026-08-26',
 
   bezet: [
-    { van: '2026-09-12', tot: '2026-09-12', wie: 'Onderhoud' },
-    { van: '2026-09-25', tot: '2026-09-28', wie: 'Familie Peeters' }
+    { van: '2026-09-07', tot: '2026-09-13', wie: 'test' }
   ],
 
-  aangevraagd: [
-    { van: '2026-10-16', tot: '2026-10-19', wie: 'Aanvraag J. Claes' }
-  ]
+  aangevraagd: []
 
 };
