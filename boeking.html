@@ -152,6 +152,8 @@ input[type=text],input[type=email],input[type=tel],textarea,select{
   font-family:inherit; font-size:16px; padding:13px 15px; border-radius:12px;
   border:1.5px solid var(--line); background:#fff; color:var(--ink); width:100%; transition:border-color .15s}
 input:focus,textarea:focus,select:focus{outline:none; border-color:var(--accent)}
+input.mis{border-color:#B3261E; background:#FFF6F5}
+.veldfout{font-size:12.5px; color:#B3261E; margin:0}
 textarea{resize:vertical; min-height:110px}
 .check{display:flex; gap:11px; align-items:flex-start; font-size:14.5px; color:var(--muted);
   grid-column:1/-1; cursor:pointer}
@@ -301,8 +303,8 @@ h1,h2,h3,.opt-naam,.feature h3{text-wrap:balance}
         <div class="step-h"><div class="step-n">3</div><h2>Jouw gegevens</h2></div>
         <p class="hint">Enkel om je aanvraag te kunnen bevestigen.</p>
         <div class="fields">
-          <div class="field"><label for="naam">Naam *</label><input type="text" id="naam" name="naam" autocomplete="name" required></div>
-          <div class="field"><label for="email">E-mail *</label><input type="email" id="email" name="email" autocomplete="email" required></div>
+          <div class="field"><label for="naam">Naam *</label><input type="text" id="naam" name="naam" autocomplete="name" required><p class="veldfout" id="foutNaam" hidden>Vul je naam in.</p></div>
+          <div class="field"><label for="email">E-mail *</label><input type="email" id="email" name="email" autocomplete="email" required><p class="veldfout" id="foutMail" hidden>Vul een geldig e-mailadres in.</p></div>
           <div class="field"><label for="tel">Telefoon</label><input type="tel" id="tel" name="tel" autocomplete="tel"></div>
           <div class="field"><label for="auto">Trekkend voertuig</label><input type="text" id="auto" name="auto" placeholder="bv. VW Passat 2019"></div>
           <div class="field full"><label for="ber">Bestemming of vraag</label><textarea id="ber" name="ber" placeholder="Waar trek je naartoe? Heb je nog vragen?"></textarea></div>
@@ -607,22 +609,50 @@ let laatsteBerekening = null;
 const knoppen = () => [document.getElementById('verzend'),
                        document.getElementById('verzend2')].filter(Boolean);
 
-/* De knop mag pas werken als er datums gekozen zijn én de bezoeker akkoord
-   is met de waarborg. */
+/* Bewust soepel: dit vangt tikfouten op, niet elk exotisch maar geldig adres. */
+const mailOk = v => /^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i.test(v);
+
+/* De verzendknoppen mogen pas werken als alles klaar is: datums gekozen,
+   naam en e-mailadres ingevuld, en akkoord met de waarborg. */
 function knoppenBijwerken(){
+  const naam    = document.getElementById('naam').value.trim();
+  const mail    = document.getElementById('email').value.trim();
   const akkoord = document.getElementById('akkoord').checked;
-  const klaar = !!laatsteBerekening && akkoord;
+
+  const klaar = !!laatsteBerekening && naam !== '' && mailOk(mail) && akkoord;
   knoppen().forEach(k => { k.disabled = !klaar; });
 
   const hint = document.getElementById('afsluitHint');
   if (hint){
     hint.classList.remove('fout');
-    hint.textContent = !laatsteBerekening
-        ? 'Kies eerst je aankomst- en vertrekdatum in de kalender.'
-        : (!akkoord ? 'Vink hierboven aan dat je akkoord gaat met de waarborg.'
-                    : 'Nog geen betaling — dit is een vrijblijvende aanvraag.');
+    hint.textContent =
+        !laatsteBerekening ? 'Kies eerst je aankomst- en vertrekdatum in de kalender.'
+      : !naam              ? 'Vul je naam in bij stap 3.'
+      : !mail              ? 'Vul je e-mailadres in bij stap 3.'
+      : !mailOk(mail)      ? 'Controleer je e-mailadres — daar lijkt iets niet te kloppen.'
+      : !akkoord           ? 'Vink hierboven aan dat je akkoord gaat met de waarborg.'
+      :                      'Nog geen betaling — dit is een vrijblijvende aanvraag.';
   }
 }
+
+/* Een veld pas rood maken wanneer de bezoeker het verlaat, niet terwijl hij
+   nog aan het typen is — anders staat alles rood voor hij één letter heeft. */
+function veldNakijken(id, foutId, geldig){
+  const veld = document.getElementById(id), fout = document.getElementById(foutId);
+  const toon = () => {
+    const leeg = veld.value.trim() === '';
+    const mis  = !leeg && !geldig(veld.value.trim());
+    veld.classList.toggle('mis', mis);
+    fout.hidden = !mis;
+  };
+  veld.addEventListener('blur', toon);
+  veld.addEventListener('input', () => {
+    veld.classList.remove('mis'); fout.hidden = true;
+    knoppenBijwerken();
+  });
+}
+veldNakijken('naam',  'foutNaam', v => v.length > 0);
+veldNakijken('email', 'foutMail', mailOk);
 
 function herbereken(){
   const lines = document.getElementById('sumLines');
