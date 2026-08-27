@@ -186,6 +186,21 @@ textarea{resize:vertical; min-height:110px}
 .btn-primary:disabled{background:#d2d2d7; color:#fff; cursor:not-allowed; transform:none}
 .sum .btn{margin-top:20px}
 .sum-note{font-size:12.5px; color:var(--muted); text-align:center; margin-top:12px; line-height:1.5}
+.sum-note a{color:var(--accent)}
+.sum-note.fout{color:#B3261E}
+/* bevestiging na het versturen */
+.klaar{max-width:640px; margin:0 auto; text-align:center; padding:56px 24px 96px}
+.klaar .vink{width:64px; height:64px; border-radius:50%; background:var(--ok); color:#fff;
+  display:flex; align-items:center; justify-content:center; margin:0 auto 28px; font-size:32px; line-height:1}
+.klaar h2{font-size:clamp(28px,5vw,40px); letter-spacing:-.02em; margin:0 0 14px}
+.klaar .lead{color:var(--muted); font-size:17px; line-height:1.6; margin:0 0 32px}
+.klaar .kaart{border:1px solid var(--line); border-radius:16px; padding:22px 24px; text-align:left;
+  background:var(--paper-2); margin-bottom:28px}
+.klaar .kaart div{display:flex; justify-content:space-between; gap:16px; padding:7px 0; font-size:15px}
+.klaar .kaart div b{color:var(--ink)}
+.klaar .kaart .sep{border-top:1px solid var(--line); margin-top:8px; padding-top:14px}
+.klaar .na{font-size:14.5px; color:var(--muted); line-height:1.7; text-align:left}
+.klaar .na b{color:var(--ink)}
 .empty-state{font-size:14.5px; color:var(--muted); padding:14px 0}
 
 footer{background:var(--paper-2); padding:48px 0; font-size:14px; color:var(--muted)}
@@ -283,6 +298,7 @@ h1,h2,h3,.opt-naam,.feature h3{text-wrap:balance}
           <div class="field"><label for="tel">Telefoon</label><input type="tel" id="tel" name="tel" autocomplete="tel"></div>
           <div class="field"><label for="auto">Trekkend voertuig</label><input type="text" id="auto" name="auto" placeholder="bv. VW Passat 2019"></div>
           <div class="field full"><label for="ber">Bestemming of vraag</label><textarea id="ber" name="ber" placeholder="Waar trek je naartoe? Heb je nog vragen?"></textarea></div>
+          <input type="checkbox" name="botcheck" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px;opacity:0;height:0;width:0">
           <label class="check"><input type="checkbox" id="akkoord"><span>Ik heb de huurvoorwaarden gelezen en ga akkoord met de waarborg van <b id="borgTxt">€250</b>.</span></label>
         </div>
       </div>
@@ -300,11 +316,26 @@ h1,h2,h3,.opt-naam,.feature h3{text-wrap:balance}
           <div class="total"><span>Totaal</span><b id="totaal">€0</b></div>
           <div class="borg">+ <span id="borgTxt2">€250</span> waarborg, terugbetaald na teruggave</div>
           <button class="btn btn-primary" type="submit" id="verzend" disabled>Aanvraag versturen</button>
-          <p class="sum-note">Je mailprogramma opent met alle gegevens ingevuld. Nog geen betaling — dit is een aanvraag.</p>
+          <p class="sum-note" id="sumNote">Nog geen betaling — dit is een vrijblijvende aanvraag. Je krijgt binnen 24 uur antwoord.</p>
         </div>
       </div>
     </aside>
   </form>
+
+  <!-- getoond na een geslaagde verzending -->
+  <div class="klaar" id="klaar" hidden>
+    <div class="vink" aria-hidden="true">&#10003;</div>
+    <h2>Je aanvraag is verstuurd.</h2>
+    <p class="lead" id="klaarLead"></p>
+    <div class="kaart" id="klaarKaart"></div>
+    <p class="na">
+      <b>Wat er nu gebeurt.</b> We kijken je aanvraag na en antwoorden binnen 24 uur — meestal sneller.
+      Pas wanneer je die bevestiging hebt, staan de datums definitief op jouw naam.
+      Daarna krijg je de betaalgegevens voor de waarborg.<br><br>
+      <b>Geen antwoord gekregen?</b> Kijk even in je spam, of mail ons rechtstreeks op
+      <a href="mailto:tijs@ttof.be">tijs@ttof.be</a>.
+    </p>
+  </div>
 </div>
 
 <footer>
@@ -322,6 +353,12 @@ h1,h2,h3,.opt-naam,.feature h3{text-wrap:balance}
 
 const CONFIG = {
   email:        'tijs@ttof.be',   // waar de aanvraag naartoe gaat
+
+  /* Web3Forms verstuurt het formulier rechtstreeks naar je mailbox, zonder dat
+     de bezoeker een mailprogramma nodig heeft. Deze sleutel hoort publiek te
+     staan — dat is bij Web3Forms zo bedoeld. Laat leeg om terug te vallen op
+     de oude mailto-methode.                                                  */
+  web3formsKey: '564d25e3-7565-4a05-896d-18416e81aa1b',
   prijsPerNacht: 75,              // € per nacht
   weekendPrijs:  165,             // vaste prijs vr→zo (2 nachten, start op vrijdag)
   weekPrijs:     450,             // vaste prijs per volle week (7 nachten)
@@ -577,7 +614,7 @@ function herbereken(){
 }
 
 /* ---------- verzenden ---------- */
-document.getElementById('form').addEventListener('submit', e => {
+document.getElementById('form').addEventListener('submit', async e => {
   e.preventDefault();
   if (!laatsteBerekening) return;
   const g = id => document.getElementById(id).value.trim();
@@ -587,6 +624,11 @@ document.getElementById('form').addEventListener('submit', e => {
   if (!document.getElementById('akkoord').checked){ alert('Vink aan dat je akkoord gaat met de waarborg.'); return; }
 
   const b = laatsteBerekening;
+  const optiesTekst = b.opts.length
+        ? b.opts.map(o => o.label + ' (' + (o.bedrag ? eur(o.bedrag) : 'gratis') + ')').join(', ')
+        : 'geen';
+
+  /* Leesbare versie voor in de mail die jij ontvangt. */
   const r = [];
   r.push('BOEKINGSAANVRAAG KULBA REBEL');
   r.push('================================');
@@ -615,13 +657,87 @@ document.getElementById('form').addEventListener('submit', e => {
   r.push(g('ber') || '-');
 
   const onderwerp = 'Boekingsaanvraag Kulba Rebel — ' + fmt(start) + ' t/m ' + fmt(eind);
-  window.location.href = 'mailto:' + CONFIG.email +
-    '?subject=' + encodeURIComponent(onderwerp) +
-    '&body=' + encodeURIComponent(r.join('\n'));
+  const knop = document.getElementById('verzend');
+  const note = document.getElementById('sumNote');
 
-  /* Wil je later een echt formulier-endpoint (bv. Formspree)? Vervang de regel
-     hierboven door een fetch() naar jouw URL — de gegevens staan in `r` en `b`. */
+  /* Geen sleutel ingevuld? Dan blijft de oude werkwijze gelden. */
+  if (!CONFIG.web3formsKey){ perMail(); return; }
+
+  const oudeTekst = knop.textContent;
+  knop.disabled = true;
+  knop.textContent = 'Versturen…';
+  note.classList.remove('fout');
+  note.textContent = 'Even geduld…';
+
+  try {
+    const res = await fetch('https://api.web3forms.com/submit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body: JSON.stringify({
+        access_key: CONFIG.web3formsKey,
+        subject:    onderwerp,
+        from_name:  'Boekingsaanvraag via ttof.be',
+        replyto:    mail,
+        botcheck:   document.querySelector('input[name=botcheck]').checked,
+        Naam:       naam,
+        Email:      mail,
+        Telefoon:   g('tel')  || '-',
+        Voertuig:   g('auto') || '-',
+        Aankomst:   fmt(start),
+        Vertrek:    fmt(eind),
+        Nachten:    b.nachten,
+        Opties:     optiesTekst,
+        Totaal:     eur(b.totaal),
+        Waarborg:   eur(CONFIG.waarborg),
+        Bericht:    g('ber') || '-',
+        message:    r.join('\n')
+      })
+    });
+    let data = {};
+    try { data = await res.json(); } catch(_){}
+    if (!res.ok || data.success === false) throw new Error(data.message || ('HTTP ' + res.status));
+    toonBevestiging(b, naam, mail);
+  } catch(err){
+    knop.disabled = false;
+    knop.textContent = oudeTekst;
+    note.classList.add('fout');
+    note.innerHTML = 'Het versturen lukte niet. ' +
+      '<a href="#" id="valTerug">Verstuur je aanvraag per mail</a> ' +
+      'of bel ons — dan regelen we het zo.';
+    const a = document.getElementById('valTerug');
+    if (a) a.addEventListener('click', ev => { ev.preventDefault(); perMail(); });
+  }
+
+  /* Terugvaloptie: opent het mailprogramma met alles ingevuld. */
+  function perMail(){
+    window.location.href = 'mailto:' + CONFIG.email +
+      '?subject=' + encodeURIComponent(onderwerp) +
+      '&body='    + encodeURIComponent(r.join('\n'));
+  }
 });
+
+/* Vervangt het formulier door een bevestiging, zodat de bezoeker zeker weet
+   dat zijn aanvraag vertrokken is. */
+function toonBevestiging(b, naam, mail){
+  const kaart = document.getElementById('klaarKaart');
+  const rij = (l, w, sep) => '<div' + (sep ? ' class="sep"' : '') + '><span>' + l + '</span><b>' + w + '</b></div>';
+  kaart.innerHTML =
+      rij('Aankomst', fmt(start)) +
+      rij('Vertrek',  fmt(eind)) +
+      rij('Nachten',  b.nachten) +
+      rij('Opties',   b.opts.length ? b.opts.map(o => o.label).join(', ') : 'geen') +
+      rij('Totaal',   eur(b.totaal), true) +
+      rij('Waarborg', eur(CONFIG.waarborg));
+
+  document.getElementById('klaarLead').innerHTML =
+      'Bedankt ' + naam.split(' ')[0].replace(/[<>&]/g, '') +
+      '. We sturen je antwoord naar <b>' + mail.replace(/[<>&]/g, '') + '</b>.';
+
+  document.getElementById('form').hidden = true;
+  const k = document.getElementById('klaar');
+  k.hidden = false;
+  k.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
 
 tekenKalender();
 tekenOpties();
