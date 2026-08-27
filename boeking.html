@@ -187,6 +187,14 @@ textarea{resize:vertical; min-height:110px}
 .sum .btn{margin-top:20px}
 .sum-note{font-size:12.5px; color:var(--muted); text-align:center; margin-top:12px; line-height:1.5}
 .sum-note a{color:var(--accent)}
+/* herhaalde verzendknop onder stap 3 — op smalle schermen overbodig,
+   want daar staat de samenvatting toch al meteen onder de velden */
+.afsluit{margin-top:28px; padding-top:26px; border-top:1px solid var(--line); max-width:420px}
+.afsluit-tot{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:14px}
+.afsluit-tot span{color:var(--muted); font-size:15px}
+.afsluit-tot b{font-size:24px; letter-spacing:-.02em}
+.afsluit .btn{width:100%}
+@media(max-width:980px){ .afsluit{display:none} }
 .sum-note.fout{color:#B3261E}
 /* bevestiging na het versturen */
 .klaar{max-width:640px; margin:0 auto; text-align:center; padding:56px 24px 96px}
@@ -300,6 +308,13 @@ h1,h2,h3,.opt-naam,.feature h3{text-wrap:balance}
           <div class="field full"><label for="ber">Bestemming of vraag</label><textarea id="ber" name="ber" placeholder="Waar trek je naartoe? Heb je nog vragen?"></textarea></div>
           <input type="checkbox" name="botcheck" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px;opacity:0;height:0;width:0">
           <label class="check"><input type="checkbox" id="akkoord"><span>Ik heb de huurvoorwaarden gelezen en ga akkoord met de waarborg van <b id="borgTxt">€250</b>.</span></label>
+        </div>
+
+        <!-- herhaling van de verzendknop, direct onder de velden -->
+        <div class="afsluit">
+          <div class="afsluit-tot"><span>Totaal</span><b id="totaal2">€0</b></div>
+          <button class="btn btn-primary" type="submit" id="verzend2" disabled>Aanvraag versturen</button>
+          <p class="sum-note" id="afsluitHint">Kies eerst je aankomst- en vertrekdatum in de kalender.</p>
         </div>
       </div>
 
@@ -587,14 +602,36 @@ function gekozenOpties(nachten){
 
 let laatsteBerekening = null;
 
+/* Alle verzendknoppen op de pagina — de knop in de samenvatting en de
+   herhaling onder stap 3 — gedragen zich altijd hetzelfde. */
+const knoppen = () => [document.getElementById('verzend'),
+                       document.getElementById('verzend2')].filter(Boolean);
+
+/* De knop mag pas werken als er datums gekozen zijn én de bezoeker akkoord
+   is met de waarborg. */
+function knoppenBijwerken(){
+  const akkoord = document.getElementById('akkoord').checked;
+  const klaar = !!laatsteBerekening && akkoord;
+  knoppen().forEach(k => { k.disabled = !klaar; });
+
+  const hint = document.getElementById('afsluitHint');
+  if (hint){
+    hint.classList.remove('fout');
+    hint.textContent = !laatsteBerekening
+        ? 'Kies eerst je aankomst- en vertrekdatum in de kalender.'
+        : (!akkoord ? 'Vink hierboven aan dat je akkoord gaat met de waarborg.'
+                    : 'Nog geen betaling — dit is een vrijblijvende aanvraag.');
+  }
+}
+
 function herbereken(){
   const lines = document.getElementById('sumLines');
-  const knop  = document.getElementById('verzend');
 
   if (!start || !eind){
     lines.innerHTML = '<div class="empty-state">Kies eerst je data in de kalender.</div>';
     document.getElementById('totaal').textContent = eur(0);
-    knop.disabled = true; laatsteBerekening = null; return;
+    document.getElementById('totaal2').textContent = eur(0);
+    laatsteBerekening = null; knoppenBijwerken(); return;
   }
 
   const nachten = Math.round((eind - start) / DAG);
@@ -607,11 +644,14 @@ function herbereken(){
              '<div class="line"><span>Huur · ' + basis.uitleg + '</span><b>' + eur(basis.bedrag) + '</b></div>';
   opts.forEach(o => { html += '<div class="line"><span>' + o.label + '</span><b>' + (o.bedrag ? eur(o.bedrag) : 'gratis') + '</b></div>'; });
   lines.innerHTML = html;
-  document.getElementById('totaal').textContent = eur(totaal);
-  knop.disabled = false;
+  document.getElementById('totaal').textContent  = eur(totaal);
+  document.getElementById('totaal2').textContent = eur(totaal);
 
   laatsteBerekening = { nachten, basis, opts, totaal };
+  knoppenBijwerken();
 }
+
+document.getElementById('akkoord').addEventListener('change', knoppenBijwerken);
 
 /* ---------- verzenden ---------- */
 document.getElementById('form').addEventListener('submit', async e => {
@@ -657,15 +697,14 @@ document.getElementById('form').addEventListener('submit', async e => {
   r.push(g('ber') || '-');
 
   const onderwerp = 'Boekingsaanvraag Kulba Rebel — ' + fmt(start) + ' t/m ' + fmt(eind);
-  const knop = document.getElementById('verzend');
+  const alle = knoppen();
   const note = document.getElementById('sumNote');
 
   /* Geen sleutel ingevuld? Dan blijft de oude werkwijze gelden. */
   if (!CONFIG.web3formsKey){ perMail(); return; }
 
-  const oudeTekst = knop.textContent;
-  knop.disabled = true;
-  knop.textContent = 'Versturen…';
+  const oudeTekst = alle[0].textContent;
+  alle.forEach(k => { k.disabled = true; k.textContent = 'Versturen…'; });
   note.classList.remove('fout');
   note.textContent = 'Even geduld…';
 
@@ -698,14 +737,15 @@ document.getElementById('form').addEventListener('submit', async e => {
     if (!res.ok || data.success === false) throw new Error(data.message || ('HTTP ' + res.status));
     toonBevestiging(b, naam, mail);
   } catch(err){
-    knop.disabled = false;
-    knop.textContent = oudeTekst;
+    alle.forEach(k => { k.disabled = false; k.textContent = oudeTekst; });
     note.classList.add('fout');
     note.innerHTML = 'Het versturen lukte niet. ' +
       '<a href="#" id="valTerug">Verstuur je aanvraag per mail</a> ' +
       'of bel ons — dan regelen we het zo.';
     const a = document.getElementById('valTerug');
     if (a) a.addEventListener('click', ev => { ev.preventDefault(); perMail(); });
+    const h = document.getElementById('afsluitHint');
+    if (h){ h.classList.add('fout'); h.textContent = 'Het versturen lukte niet — probeer het opnieuw of mail ons rechtstreeks.'; }
   }
 
   /* Terugvaloptie: opent het mailprogramma met alles ingevuld. */
